@@ -79,7 +79,9 @@ public:
 		UpdateLoadedChunks();
 		chunkManager->UpdatePausedState(playerCenter_, glm::normalize(glm::vec2(camera->front.x, camera->front.z)));
 		chunkManager->Update(1, GetPhysicsFactory(), scene.get(), playerCenter_, chunkLoadDistance, physicsDistance);
+		UpdateTablePlacement();
 		Update();
+
 
 		HandleXRInputs();
 		UpdateControllerCubes(dt);
@@ -99,7 +101,6 @@ public:
 		CreateControllerCubes();
 		CreateBall();
 		CreateThrowingLane();
-		CreateTable();
 	}
 
 	std::shared_ptr<fe::Object> AddCube(const char *name, glm::vec3 color, float size, glm::vec3 position)
@@ -169,19 +170,59 @@ public:
 
 	void CreateTable()
 	{
-		const glm::vec3 base(0.0f, 30.2f, 8.4f);
+		if (!tableParts_.empty())
+			return;
+
 		const glm::vec3 topSize(1.6f, 0.12f, 0.9f);
 		const float legHeight = 0.84f;
 		const float legSize = 0.1f;
-		AddSolidBox("TableTop", {0.55f, 0.38f, 0.22f}, topSize,
-			base + glm::vec3(0.0f, legHeight + topSize.y * 0.5f, 0.0f));
+		const glm::vec3 topOffset(0.0f, legHeight + topSize.y * 0.5f, 0.0f);
+
+		auto addPart = [&](const char *name, glm::vec3 color, glm::vec3 size, glm::vec3 offset) {
+			auto object = AddSolidBox(name, color, size, glm::vec3(0.0f));
+			tableParts_.push_back({object, offset});
+		};
+
+		addPart("TableTop", {0.55f, 0.38f, 0.22f}, topSize, topOffset);
 		const float legX[2] = {-0.65f, 0.65f};
 		const float legZ[2] = {-0.32f, 0.32f};
 		for (float x : legX)
 			for (float z : legZ)
-				AddSolidBox("TableLeg", {0.35f, 0.24f, 0.14f},
+				addPart("TableLeg", {0.35f, 0.24f, 0.14f},
 					glm::vec3(legSize, legHeight, legSize),
-					base + glm::vec3(x, legHeight * 0.5f, z));
+					glm::vec3(x, legHeight * 0.5f, z));
+	}
+
+	void PlaceTable(float floorY)
+	{
+		CreateTable();
+
+		const glm::vec3 base(0.0f, floorY, 8.4f);
+		for (auto &part : tableParts_)
+		{
+			const glm::vec3 position = base + part.offset;
+			part.object->SetPosition(position);
+			if (part.object->physicsObject)
+				part.object->physicsObject->SetPosition(position);
+		}
+		tableFloorY_ = floorY;
+	}
+
+	void UpdateTablePlacement()
+	{
+		const int surface = std::max({
+			chunkManager->GetSurfaceHeight(-1, 8),
+			chunkManager->GetSurfaceHeight(0, 8),
+			chunkManager->GetSurfaceHeight(-1, 9),
+			chunkManager->GetSurfaceHeight(0, 9)});
+		if (surface <= 0)
+			return;
+
+		const float floorY = static_cast<float>(surface);
+		if (!tableParts_.empty() && glm::abs(floorY - tableFloorY_) < 0.01f)
+			return;
+
+		PlaceTable(floorY);
 	}
 
 	void CreateControllerCubes()
@@ -692,7 +733,17 @@ private:
 		glm::vec3 angularVelocity{0.0f};
 	};
 
+	struct TablePart
+	{
+		std::shared_ptr<fe::Object> object;
+		glm::vec3 offset{0.0f};
+	};
+
+	std::vector<TablePart> tableParts_;
+	float tableFloorY_ = -1.0f;
+
 	const glm::vec3 playerSpawn{0.0f, 33.0f, 10.0f};
+
 	float walkSpeed = 25.0f;
 	float sprintSpeed = 40.0f;
 
