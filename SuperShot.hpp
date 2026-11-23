@@ -629,8 +629,6 @@ private:
 		return GetOpenXR().GetWorldInputState(origin + positionOffset, rotation);
 	}
 
-	enum class Mode { Walking, Drone, Airplane };
-	Mode mode = Mode::Walking;
 	bool showDebugUI = false;
 
 	struct HandRig
