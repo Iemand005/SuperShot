@@ -23,6 +23,10 @@ set(FE_EXCLUDE_JOLT OFF CACHE BOOL "Disable JOLT" FORCE)
 
 option(SUPERSHOT_USE_VULKAN "Use Vulkan for SuperShot rendering" ON)
 
+if(EMSCRIPTEN)
+	set(SUPERSHOT_USE_VULKAN OFF CACHE BOOL "Use Vulkan for SuperShot rendering" FORCE)
+endif()
+
 set(ENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../FenixEngine")
 
 if(CMAKE_CONFIGURATION_TYPES)
@@ -66,6 +70,9 @@ if(ANDROID)
 	add_library(main SHARED ${SUPERSHOT_SOURCES})
 	set(SUPERSHOT_TARGET main)
 	target_link_libraries(${SUPERSHOT_TARGET} PRIVATE android log)
+elseif(EMSCRIPTEN)
+	add_executable(SuperShot ${SUPERSHOT_SOURCES})
+	set(SUPERSHOT_TARGET SuperShot)
 else()
 	add_executable(SuperShot
 		WIN32
@@ -214,6 +221,27 @@ if(NOT ANDROID)
 		add_custom_command(TARGET ${SUPERSHOT_TARGET} POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy_directory ${ASSETS_SRC_DIR} $<TARGET_FILE_DIR:${SUPERSHOT_TARGET}>/Assets
 			COMMENT "Copying shared Assets next to the executable"
+		)
+	endif()
+endif()
+
+include(${CMAKE_SOURCE_DIR}/EmscriptenConfig.cmake)
+if(EMSCRIPTEN)
+	file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../Assets" SUPERSHOT_ASSETS_PATH)
+	setup_emscripten_target(SuperShot
+		RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources
+		EXTRA_LINK_OPTIONS
+			--preload-file=${SUPERSHOT_ASSETS_PATH}@Assets
+	)
+
+	if(CMAKE_BUILD_TYPE STREQUAL "Release")
+		set(SUPERSHOT_PAGES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../FenixWeb/docs/SuperShot)
+		add_custom_command(TARGET SuperShot POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${SUPERSHOT_PAGES_DIR}"
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:SuperShot>/SuperShot.wasm" "${SUPERSHOT_PAGES_DIR}/SuperShot.wasm"
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:SuperShot>/SuperShot.js" "${SUPERSHOT_PAGES_DIR}/SuperShot.js"
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:SuperShot>/SuperShot.data" "${SUPERSHOT_PAGES_DIR}/SuperShot.data"
+			COMMENT "Publishing SuperShot build artifacts to ${SUPERSHOT_PAGES_DIR} (Release only)"
 		)
 	endif()
 endif()
