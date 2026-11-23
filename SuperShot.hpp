@@ -58,7 +58,7 @@ public:
 
 	void Init() override
 	{
-		auto *window = GetWindow<fe::SDLWindow>();
+		auto *window = getWindow<fe::SDLWindow>();
 		window->Show();
 		window->DisableVSync();
 		camera->SetAspect(window->width, window->height);
@@ -70,7 +70,7 @@ public:
 	{
 		ProcessInput();
 		const float dt = static_cast<float>(fpsCounter.deltaTime);
-		auto *window = GetWindow<fe::SDLWindow>();
+		auto *window = getWindow<fe::SDLWindow>();
 
 		WalkingUpdate(window, dt);
 
@@ -563,7 +563,7 @@ public:
 	void ProcessInput()
 	{
 		SDL_Event event;
-		auto *window = GetWindow<fe::SDLWindow>();
+		auto *window = getWindow<fe::SDLWindow>();
 		auto look = [&](float dx, float dy) {
 			camera->yaw += dx * 0.1f;
 			camera->pitch -= dy * 0.1f;
@@ -624,9 +624,9 @@ public:
 			window->StopMouseCapture();
 	}
 
-	void InitUI() override {}
+	void initUI() override {}
 
-	void DrawUI() override
+	void drawUI() override
 	{
 		const bool showXR = IsInstanceValid();
 		if (!showDebugUI && !showXR)
