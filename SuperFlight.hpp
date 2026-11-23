@@ -49,8 +49,8 @@ public:
 #ifdef FE_HAS_VULKAN
 		if (options.useVulkan)
 		{
-			LoadArrayShaders("resources/shaders/VertexShader_vk_array.spv", "resources/shaders/FragmentShader_vk_array.spv");
-			LoadFoxcraftShaders("resources/shaders/VertexShader_vk_foxcraft.spv", "resources/shaders/FragmentShader_vk_array.spv");
+			LoadShaders<fe::VertexArray>("resources/shaders/VertexShader_vk_array.spv", "resources/shaders/FragmentShader_vk_array.spv");
+			LoadShaders<VoxelPackedVertex>("resources/shaders/VertexShader_vk_foxcraft.spv", "resources/shaders/FragmentShader_vk_array.spv");
 			chunkBatcher_ = std::make_unique<ChunkBatcher>(
 				static_cast<fe::VulkanDevice *>(renderDevice.get()),
 				ChunkMesher::BuildBlockTextureImages());
