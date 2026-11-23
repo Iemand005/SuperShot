@@ -70,7 +70,6 @@ public:
 		camera->SetAspect(window->width, window->height);
 		SetupWorld();
 		window->StartMouseCapture();
-		refreshJoysticks();
 	}
 
 	void Step() override
@@ -804,7 +803,6 @@ public:
 		auto *window = GetWindow<fe::SDLWindow>();
 		auto capture = [&] {
 			window->StartMouseCapture();
-			refreshJoysticks();
 		};
 		auto look = [&](float dx, float dy) {
 			camera->yaw += dx * 0.1f;
