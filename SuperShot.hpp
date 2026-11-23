@@ -85,6 +85,7 @@ public:
 		UpdateControllerCubes(dt);
 
 		RespawnIfFell();
+		ApplyVREyeHeight();
 		SyncCameraToPlayer();
 		Redraw();
 	}
@@ -98,6 +99,7 @@ public:
 		CreateControllerCubes();
 		CreateBall();
 		CreateThrowingLane();
+		CreateTable();
 	}
 
 	std::shared_ptr<fe::Object> AddCube(const char *name, glm::vec3 color, float size, glm::vec3 position)
@@ -108,6 +110,22 @@ public:
 		object->state.position = position;
 		object->isStatic = true;
 		scene->AddObject(object);
+		return object;
+	}
+
+	std::shared_ptr<fe::Object> AddSolidBox(const char *name, glm::vec3 color, glm::vec3 size, glm::vec3 position)
+	{
+		auto object = AddCube(name, color, 1.0f, position);
+		object->state.scale = size;
+		if (auto *physics = GetPhysicsFactory())
+		{
+			auto body = physics->CreateObject(size, false, false);
+			if (body)
+			{
+				body->SetPosition(position);
+				object->SetPhysicsObject(std::move(body));
+			}
+		}
 		return object;
 	}
 
@@ -147,6 +165,23 @@ public:
 			auto object = AddCube(part.name, part.color, 1.0f, base + part.offset);
 			object->state.scale = part.size;
 		}
+	}
+
+	void CreateTable()
+	{
+		const glm::vec3 base(0.0f, 30.2f, 8.4f);
+		const glm::vec3 topSize(1.6f, 0.12f, 0.9f);
+		const float legHeight = 0.84f;
+		const float legSize = 0.1f;
+		AddSolidBox("TableTop", {0.55f, 0.38f, 0.22f}, topSize,
+			base + glm::vec3(0.0f, legHeight + topSize.y * 0.5f, 0.0f));
+		const float legX[2] = {-0.65f, 0.65f};
+		const float legZ[2] = {-0.32f, 0.32f};
+		for (float x : legX)
+			for (float z : legZ)
+				AddSolidBox("TableLeg", {0.35f, 0.24f, 0.14f},
+					glm::vec3(legSize, legHeight, legSize),
+					base + glm::vec3(x, legHeight * 0.5f, z));
 	}
 
 	void CreateControllerCubes()
@@ -409,7 +444,16 @@ public:
 			}
 		}
 		UpdateLoadedChunks();
+		ApplyVREyeHeight();
 		SyncCameraToPlayer();
+	}
+
+	void ApplyVREyeHeight()
+	{
+		const float centerOffset = player && player->physicsCharacter
+			? player->physicsCharacter->GetCenterOffset()
+			: playerHeight * 0.5f;
+		positionOffset.y = playerHeight - centerOffset;
 	}
 
 	void UpdateLoadedChunks()
@@ -617,6 +661,11 @@ public:
 			ImGui::DragInt("Render Distance", &chunkLoadDistance);
 			ImGui::DragInt("Physics Distance", &physicsDistance, 0.5f, 0, 20);
 			ImGui::SliderInt("Terrain Pre-gen", &chunkOutgenDistance, 1, 10);
+		}
+		if (ImGui::CollapsingHeader("Player"))
+		{
+			ImGui::SliderFloat("VR Eye Height", &playerHeight, 1.0f, 2.2f, "%.2f m");
+			ImGui::Text("VR origin offset: %.2f m", positionOffset.y);
 		}
 		ImGui::End();
 	}
