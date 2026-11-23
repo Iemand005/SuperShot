@@ -801,9 +801,6 @@ public:
 	{
 		SDL_Event event;
 		auto *window = GetWindow<fe::SDLWindow>();
-		auto capture = [&] {
-			window->StartMouseCapture();
-		};
 		auto look = [&](float dx, float dy) {
 			camera->yaw += dx * 0.1f;
 			camera->pitch -= dy * 0.1f;
@@ -824,7 +821,7 @@ public:
 				if (event.button.which != SDL_TOUCH_MOUSEID && event.button.button == SDL_BUTTON_LEFT && !uiCaptures)
 				{
 					if (!window->IsCapturingMouse())
-						capture();
+						window->StartMouseCapture();
 					else if (mode == Mode::Walking)
 						TryEnterVehicleAtScreenCenter();
 				}
@@ -839,7 +836,7 @@ public:
 				break;
 			case SDL_EVENT_FINGER_DOWN:
 				if (event.tfinger.fingerID == 0 && !uiCaptures && !window->IsCapturingMouse())
-					capture();
+					window->StartMouseCapture();
 				break;
 			case SDL_EVENT_FINGER_MOTION:
 				if (event.tfinger.fingerID == 0 && window->IsCapturingMouse())
@@ -854,7 +851,7 @@ public:
 				{
 				case SDLK_F11: window->ToggleFullscreen(); break;
 				case SDLK_F3: showDebugUI = !showDebugUI; break;
-				case SDLK_F2: capture(); break;
+				case SDLK_F2: window->StartMouseCapture(); break;
 				case SDLK_F4: ToggleXR(); break;
 				case SDLK_F: if (mode != Mode::Walking) ExitVehicle(); break;
 				case SDLK_G: if (mode == Mode::Airplane) SetAirplaneGear(!plane_.gearDown); break;
