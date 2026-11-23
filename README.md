@@ -1,6 +1,6 @@
 # SuperFlight
 
-Lightweight VR slight simulator game with joystick support on Quest Native!
+Lightweight VR shooting simulator game with support for Quest Native and Web!
 
 TODO: I want to add shooting, async chunk loading, self made plane models. Also audio for the drone noises and plane noises maybe, I want a generator that incraesases oudio putch to like cahgne the sound depending on how fast the drone flies.
 
