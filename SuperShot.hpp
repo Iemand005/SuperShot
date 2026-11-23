@@ -529,8 +529,6 @@ public:
 				case SDLK_F3: showDebugUI = !showDebugUI; break;
 				case SDLK_F2: window->StartMouseCapture(); break;
 				case SDLK_F4: ToggleXR(); break;
-				case SDLK_F: if (mode != Mode::Walking) ExitVehicle(); break;
-				case SDLK_G: if (mode == Mode::Airplane) SetAirplaneGear(!plane_.gearDown); break;
 				default: break;
 				}
 				break;
@@ -539,92 +537,6 @@ public:
 		}
 		if (window->IsKeyDown(SDL_SCANCODE_ESCAPE) || ImGui::GetIO().WantCaptureMouse)
 			window->StopMouseCapture();
-	}
-
-	static fe::Mesh<fe::Vertex> BuildBoxMesh(
-		std::initializer_list<std::pair<glm::vec3, glm::vec3>> boxes)
-	{
-		std::vector<fe::Vertex> vertices;
-		std::vector<uint32_t> indices;
-		for (const auto &box : boxes)
-		{
-			const auto cube = fe::Primitives::GenerateCube(1.0f);
-			const uint32_t base = static_cast<uint32_t>(vertices.size());
-			for (auto vertex : cube.vertices)
-			{
-				vertex.position = box.first + vertex.position * (box.second * 2.0f);
-				vertices.push_back(vertex);
-			}
-			for (uint32_t index : cube.indices)
-				indices.push_back(base + index);
-		}
-		return fe::Mesh<fe::Vertex>(vertices, indices);
-	}
-
-	static fe::Mesh<fe::Vertex> BuildAirplaneMesh()
-	{
-		return BuildBoxMesh({
-			{{0.0f, 0.0f, 0.0f}, {0.25f, 0.25f, 1.6f}},
-			{{0.0f, 0.0f, 0.2f}, {1.8f, 0.06f, 0.4f}},
-			{{0.0f, 0.0f, -1.4f}, {0.6f, 0.05f, 0.25f}},
-			{{0.0f, 0.35f, -1.4f}, {0.05f, 0.35f, 0.3f}}});
-	}
-
-	static fe::Mesh<fe::Vertex> BuildAirplaneGearMesh()
-	{
-		return BuildBoxMesh({
-			{{0.0f, -0.45f, 1.1f}, {0.06f, 0.30f, 0.06f}},
-			{{0.0f, -0.72f, 1.1f}, {0.10f, 0.10f, 0.22f}},
-			{{-0.6f, -0.45f, -0.3f}, {0.06f, 0.30f, 0.06f}},
-			{{-0.6f, -0.72f, -0.3f}, {0.10f, 0.10f, 0.22f}},
-			{{0.6f, -0.45f, -0.3f}, {0.06f, 0.30f, 0.06f}},
-			{{0.6f, -0.72f, -0.3f}, {0.10f, 0.10f, 0.22f}}});
-	}
-
-	static std::vector<fe::PhysicsVehicle::WheelConfig> BuildAirplaneWheels()
-	{
-		using Wheel = fe::PhysicsVehicle::WheelConfig;
-		return {
-			{{0.0f, -0.45f, 1.1f}, 0.22f, 0.2f, 0.3f, 1.5f, 0.5f, 0.8f, true, false},
-			{{-0.6f, -0.45f, -0.3f}, 0.28f, 0.2f, 0.3f, 1.5f, 0.5f, 0.8f, false, true},
-			{{0.6f, -0.45f, -0.3f}, 0.28f, 0.2f, 0.3f, 1.5f, 0.5f, 0.8f, false, true}};
-	}
-
-	void CreateAirplaneVehicle()
-	{
-		auto *physics = GetPhysicsFactory();
-		if (physics && plane_.body && !plane_.vehicle)
-		{
-			plane_.vehicle = physics->CreateVehicle(plane_.body, BuildAirplaneWheels());
-			if (plane_.vehicle)
-				plane_.vehicle->SetMaxPitchRollAngle(45.0f);
-		}
-	}
-
-	void DestroyAirplaneVehicle()
-	{
-		if (!plane_.vehicle)
-			return;
-		if (auto *physics = GetPhysicsFactory())
-			physics->DestroyVehicle(plane_.vehicle);
-		plane_.vehicle = nullptr;
-	}
-
-	void SetAirplaneGear(bool down)
-	{
-		if (down == plane_.gearDown)
-			return;
-		plane_.gearDown = down;
-		if (plane_.gear)
-			plane_.gear->visible = down;
-		if (down)
-			CreateAirplaneVehicle();
-		else
-		{
-			if (plane_.body)
-				plane_.airSpeed = glm::length(plane_.body->GetLinearVelocity());
-			DestroyAirplaneVehicle();
-		}
 	}
 
 	void InitUI() override {}
