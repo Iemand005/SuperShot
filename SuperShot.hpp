@@ -3,13 +3,9 @@
 #define NOMINMAX
 
 #include <algorithm>
-#include <array>
 #include <cmath>
-#include <cstdint>
-#include <initializer_list>
 #include <limits>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,8 +18,6 @@
 #include <Object.hpp>
 #include <Character.hpp>
 #include <Primitives.hpp>
-#include <components/Drone.hpp>
-#include <physics/PhysicsVehicle.hpp>
 #include <vr/OpenXR.hpp>
 
 #include "ChunkManager.hpp"
@@ -78,12 +72,7 @@ public:
 		const float dt = static_cast<float>(fpsCounter.deltaTime);
 		auto *window = GetWindow<fe::SDLWindow>();
 
-		switch (mode)
-		{
-		case Mode::Walking: WalkingUpdate(window, dt); break;
-		case Mode::Drone: if (drone_ && drone_->IsActive()) DroneUpdate(window, dt); break;
-		case Mode::Airplane: if (plane_.body) AirplaneUpdate(window, dt); break;
-		}
+		WalkingUpdate(window, dt);
 
 		if (window->IsKeyDown(SDL_SCANCODE_B)) CreateBall();
 
@@ -95,29 +84,17 @@ public:
 		HandleXRInputs();
 		UpdateControllerCubes(dt);
 
-		switch (mode)
-		{
-		case Mode::Walking: RespawnIfFell(); SyncCameraToPlayer(); break;
-		case Mode::Drone: if (drone_ && drone_->IsActive()) camera->SetPos(drone_->GetBody()->GetPosition()); break;
-		case Mode::Airplane: if (plane_.body) AirplaneCameraUpdate(); break;
-		}
+		RespawnIfFell();
+		SyncCameraToPlayer();
 		Redraw();
 	}
 
 	void SetupWorld()
 	{
-		Chunk::landingStrip.enabled = true;
-		Chunk::landingStrip.minX = -48.0f;
-		Chunk::landingStrip.maxX = 48.0f;
-		Chunk::landingStrip.minZ = -64.0f;
-		Chunk::landingStrip.maxZ = 16.0f;
-		Chunk::landingStrip.height = 30;
-
 		if (auto *physics = GetPhysicsFactory())
 			physics->SetGravity(glm::vec3(0.0f, -20.0f, 0.0f));
 
 		CreatePlayer();
-		CreateParkedVehicles();
 		CreateControllerCubes();
 		CreateBall();
 		CreateThrowingLane();
@@ -432,107 +409,6 @@ public:
 			}
 		}
 		UpdateLoadedChunks();
-		SyncCameraToPlayer();
-	}
-
-	void CreateParkedVehicles()
-	{
-		drone_ = std::make_unique<fe::Drone>();
-		if (!drone_->Spawn(*scene, droneSpawn))
-			throw std::runtime_error("Failed to spawn the SuperFlight demo drone");
-
-		plane_.object = std::make_shared<fe::Object>(BuildAirplaneMesh());
-		plane_.object->name = "Airplane";
-		plane_.object->color = glm::vec3(0.85f, 0.20f, 0.20f);
-		plane_.object->state.position = airplaneSpawn;
-		plane_.object->isStatic = true;
-		scene->AddObject(plane_.object);
-
-		auto gear = std::make_unique<fe::Object>(BuildAirplaneGearMesh());
-		gear->name = "AirplaneGear";
-		gear->color = glm::vec3(0.15f, 0.15f, 0.17f);
-		gear->visible = plane_.gearDown;
-		plane_.gear = plane_.object->AddChild(std::move(gear));
-	}
-
-	void EnterDrone()
-	{
-		if (mode != Mode::Walking)
-			ExitVehicle();
-		auto *physics = GetPhysicsFactory();
-		if (physics && drone_ && drone_->IsSpawned() && drone_->Enter(*physics))
-		{
-			mode = Mode::Drone;
-			GetWindow<fe::SDLWindow>()->StartMouseCapture();
-		}
-	}
-
-	void EnterAirplane()
-	{
-		if (mode != Mode::Walking)
-			ExitVehicle();
-		auto *physics = GetPhysicsFactory();
-		if (!physics || !plane_.object)
-			return;
-
-		if (!plane_.body)
-		{
-			plane_.object->SetPhysicsObject(physics->CreateObject(glm::vec3(3.6f, 1.4f, 3.2f), true, true));
-			plane_.body = plane_.object->physicsObject.get();
-			if (plane_.body)
-			{
-				plane_.body->SetPosition(plane_.object->state.position);
-				plane_.body->SetRotation(plane_.object->state.orientation);
-				plane_.body->SetDamping(0.0f, 0.0f);
-				plane_.body->SetAngularVelocity(glm::vec3(0.0f));
-				plane_.body->SetLinearVelocity(glm::vec3(0.0f));
-			}
-		}
-		plane_.object->isStatic = false;
-		mode = Mode::Airplane;
-		plane_.throttle = 0.0f;
-		plane_.airSpeed = 0.0f;
-		plane_.gearDown = false;
-		SetAirplaneGear(true);
-		GetWindow<fe::SDLWindow>()->StartMouseCapture();
-	}
-
-	void ExitVehicle()
-	{
-		fe::Object *vehicle = nullptr;
-		if (mode == Mode::Drone && drone_ && drone_->IsSpawned())
-		{
-			vehicle = drone_->GetDroneObject().get();
-			drone_->Exit();
-		}
-		else if (mode == Mode::Airplane && plane_.object)
-		{
-			vehicle = plane_.object.get();
-			DestroyAirplaneVehicle();
-			plane_.object->SetPhysicsObject(nullptr);
-			plane_.body = nullptr;
-			plane_.gearDown = true;
-			if (plane_.gear)
-				plane_.gear->visible = true;
-		}
-		if (vehicle)
-			vehicle->isStatic = true;
-
-		glm::vec3 position = vehicle ? vehicle->state.position : playerSpawn;
-		const int surface = chunkManager->GetSurfaceHeight(
-			static_cast<int>(std::floor(position.x)), static_cast<int>(std::floor(position.z)));
-		const float groundY = surface > 0 ? static_cast<float>(surface) : position.y;
-		const glm::vec3 place(position.x + 3.0f, groundY + 1.2f, position.z);
-		if (player)
-		{
-			player->state.position = place;
-			if (player->physicsCharacter)
-			{
-				player->physicsCharacter->SetPosition(place);
-				player->physicsCharacter->SetLinearVelocity(glm::vec3(0.0f));
-			}
-		}
-		mode = Mode::Walking;
 		SyncCameraToPlayer();
 	}
 
