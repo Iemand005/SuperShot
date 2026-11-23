@@ -32,7 +32,7 @@ public:
 	explicit SuperFlight(fe::XRGameOptions options) : fe::EditableGame(options)
 	{
 		SetClearColor(0.05f, 0.07f, 0.12f);
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(__EMSCRIPTEN__)
 		LoadShaders("resources/shaders/VertexShader_gles300.glsl",
 			"resources/shaders/FragmentShader_gles300.glsl");
 #else
