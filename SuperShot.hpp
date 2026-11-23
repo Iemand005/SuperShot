@@ -643,39 +643,9 @@ private:
 		glm::vec3 angularVelocity{0.0f};
 	};
 
-	struct Plane
-	{
-		std::shared_ptr<fe::Object> object;
-		fe::PhysicsObject *body = nullptr;
-		fe::Object *gear = nullptr;
-		fe::PhysicsVehicle *vehicle = nullptr;
-		bool gearDown = true;
-		bool invertPitch = false;
-		bool chaseCam = true;
-		float throttle = 0.0f;
-		float airSpeed = 0.0f;
-		float maxSpeed = 90.0f;
-		float accel = 6.0f;
-		float throttleRate = 1.5f;
-		float pitchRate = 60.0f;
-		float rollRate = 120.0f;
-		float yawRate = 45.0f;
-		float gravitySag = 8.0f;
-		float stallSpeed = 25.0f;
-		float levelStrength = 4.0f;
-		float camDistance = 12.0f;
-		float camHeight = 4.0f;
-		glm::vec2 cockpitOffset{0.6f, 0.4f};
-	};
-
 	const glm::vec3 playerSpawn{0.0f, 33.0f, 10.0f};
-	const glm::vec3 droneSpawn{6.0f, 30.6f, 0.0f};
-	const glm::vec3 airplaneSpawn{-6.0f, 31.2f, 0.0f};
 	float walkSpeed = 25.0f;
 	float sprintSpeed = 40.0f;
-	float droneCameraYawSpeed = 120.0f;
-	float droneCameraPitchSpeed = 90.0f;
-	float droneCameraPitchLimit = 60.0f;
 
 	std::unique_ptr<ChunkManager> chunkManager = std::make_unique<ChunkManager>(4);
 #ifdef FE_HAS_VULKAN
@@ -686,8 +656,6 @@ private:
 	int chunkOutgenDistance = 1;
 	int physicsDistance = 2;
 
-	std::unique_ptr<fe::Drone> drone_;
-	Plane plane_;
 	HandRig hands_[2];
 	std::vector<std::shared_ptr<fe::Object>> handJointCubes_;
 	std::shared_ptr<fe::Object> ball_;
