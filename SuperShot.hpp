@@ -611,59 +611,6 @@ public:
 	void DrawDebugUI()
 	{
 		ImGui::Begin("SuperFlight");
-		ImGui::Text("Mode: %s", mode == Mode::Walking ? "Walking" : (mode == Mode::Drone ? "Drone" : "Airplane"));
-		if (mode != Mode::Walking && ImGui::Button("Exit vehicle (F)"))
-			ExitVehicle();
-		ImGui::TextDisabled("Left-click the plane/drone to fly it. F to exit.");
-
-		auto slider = [](const char *label, float &value, float min, float max, const char *format = "%.1f") {
-			ImGui::SliderFloat(label, &value, min, max, format);
-		};
-		if (ImGui::CollapsingHeader("Drone", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			auto &settings = drone_->GetSettings();
-			ImGui::Checkbox("Altitude hold", &settings.altitudeHold);
-			slider("Thrust", settings.thrust, 0.0f, 80.0f, "%.1f m/s2");
-			slider("Lift", settings.lift, 0.0f, 60.0f, "%.1f m/s2");
-			slider("Yaw Speed", droneCameraYawSpeed, 10.0f, 360.0f, "%.0f deg/s");
-			slider("Pitch Speed", droneCameraPitchSpeed, 10.0f, 360.0f, "%.0f deg/s");
-			slider("Linear Damping", settings.linearDamping, 0.0f, 5.0f);
-			slider("Angular Damping", settings.angularDamping, 0.0f, 10.0f);
-			ImGui::TextDisabled("WASD move, Space up, Shift down, arrows yaw/pitch");
-			if (drone_->GetBody())
-				ImGui::Text("Speed: %.1f m/s", glm::length(drone_->GetBody()->GetLinearVelocity()));
-		}
-
-		if (ImGui::CollapsingHeader("Airplane", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Text("Gear: %s (%s)", plane_.gearDown ? "DOWN" : "UP",
-				plane_.gearDown ? "taxi/vehicle mode" : "flight mode");
-			if (ImGui::Button(plane_.gearDown ? "Retract gear (G)" : "Extend gear (G)"))
-				SetAirplaneGear(!plane_.gearDown);
-			ImGui::TextDisabled(plane_.gearDown
-				? "W throttle, S reverse, A/D steer, Shift brake, Space handbrake"
-				: "W/S pitch, A/D roll, Q/E yaw, Shift/Ctrl throttle, Space level");
-			ImGui::Checkbox("Chase camera", &plane_.chaseCam);
-			ImGui::Checkbox("Invert pitch", &plane_.invertPitch);
-			ImGui::Text("Throttle: %.0f%%", plane_.throttle * 100.0f);
-			slider("Max Speed", plane_.maxSpeed, 10.0f, 200.0f, "%.0f m/s");
-			slider("Acceleration", plane_.accel, 0.5f, 20.0f, "%.1f /s");
-			slider("Throttle Rate", plane_.throttleRate, 0.1f, 5.0f, "%.1f /s");
-			slider("Pitch Rate", plane_.pitchRate, 10.0f, 180.0f, "%.0f deg/s");
-			slider("Roll Rate", plane_.rollRate, 10.0f, 270.0f, "%.0f deg/s");
-			slider("Yaw Rate", plane_.yawRate, 10.0f, 120.0f, "%.0f deg/s");
-			slider("Gravity Sag", plane_.gravitySag, 0.0f, 30.0f, "%.1f m/s");
-			slider("Stall Speed", plane_.stallSpeed, 5.0f, 80.0f, "%.0f m/s");
-			slider("Level Strength", plane_.levelStrength, 0.0f, 10.0f);
-			slider("Cam Distance", plane_.camDistance, 2.0f, 40.0f);
-			slider("Cam Height", plane_.camHeight, 0.0f, 20.0f);
-			if (plane_.body)
-			{
-				ImGui::Text("Airspeed: %.1f m/s", plane_.airSpeed);
-				const glm::vec3 velocity = plane_.body->GetLinearVelocity();
-				ImGui::Text("Velocity: %.2f, %.2f, %.2f", velocity.x, velocity.y, velocity.z);
-			}
-		}
 
 		if (ImGui::CollapsingHeader("Terrain"))
 		{
