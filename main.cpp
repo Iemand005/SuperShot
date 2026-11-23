@@ -4,7 +4,7 @@
 #include <X11/Xlib.h>
 #endif
 #include <string>
-#include "SuperFlight.hpp"
+#include "SuperShot.hpp"
 
 #ifdef __ANDROID__
 #include <SDL3/SDL_main.h>
